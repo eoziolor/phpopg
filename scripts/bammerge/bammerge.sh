@@ -5,7 +5,7 @@
 #SBATCH -o mergebam-%j.o
 #SBATCH -N 1
 #SBATCH -n 16
-#SBATCH -t 05-00:00
+#SBATCH -t 06-00:00
 #SBATCH --mem=60000
 #SBATCH -p high
 
