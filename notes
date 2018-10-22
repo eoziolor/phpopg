@@ -334,3 +334,149 @@ ggplot(mapped,
   theme_classic()
 ```
 
+Oct 17, 2018
+===
+# Doing per base coverage
+
+```{bash}
+#!/bin/bash -l
+
+#SBATCH -J bamdepth
+#SBATCH -e bamdepth-%j.o
+#SBATCH -o bamdepth-%j.o
+#SBATCH -N 1
+#SBATCH -n 16
+#SBATCH -t 06-00:00
+#SBATCH --mem=60000
+#SBATCH -p high
+
+module load bio3
+
+#files
+my_list=/home/eoziolor/phpopg/data/list/bam_list.txt
+#my_stools=/home/eoziolor/program/samtools-1.9/bin/samtools
+my_out=/home/eoziolor/phpopg/data/depth/coverage_allbases.txt.gz
+
+#code
+samtools depth \
+-d 10000 \
+-f $my_list | gzip > $my_out
+```
+
+Oct 21, 2018
+===
+## Depth threshold determination
+
+* Grabbing random 10Mb depth region
+
+```{bash}
+#!/bin/bash -l
+
+#SBATCH -J rand10Mb
+#SBATCH -e rand10Mb-%j.o
+#SBATCH -o rand10Mb-%j.o
+#SBATCH -N 1
+#SBATCH -n 8
+#SBATCH -t 03-00:00
+#SBATCH --mem=60000
+#SBATCH -p high
+
+module load bio3
+
+#files
+dir=/home/eoziolor/phpopg/data/depth
+
+zcat $dir/coverage_allbases.txt.gz | \
+sort -R | \
+head -n 10000000 | \
+gzip > $dir/cov_10Mbrand.txt.gz
+```
+
+## Plotting coverage distribution
+
+* Downloading file
+```{bash}
+scp -P 2022 farm:/home/eoziolor/phpopg/data/depth/cov_10Mbrand.txt.gz ~/phpopg/data/depth/
+```
+
+* Observing distribution
+```{r}
+cov<-read.table("~/phpopg/data/depth/cov_10Mbrand.txt.gz",header=F)
+names<-c("chrom","pos","cov")
+
+hist(cov$cov,breaks=1000)
+
+subw<-cov$cov<3000
+hist(cov[subw,"cov"],breaks=1000)
+
+summary(cov$cov)
+summary(cov[subw,"cov"])
+```
+
+# Creating a genome file
+```{bash}
+awk -v OFS='\t' {'print $1,$2'} phgenome_masked.fasta.fai > phgenome_masked.fasta.genome
+```
+
+Oct 22, 2018
+===
+
+# Bimodal coverage distribution
+* fist I use grep to figure out what line I need to stop reading the coverage file at to exclude any small scaffolds - scaffold 6281 and on
+
+```{bash}
+zcat coverage_allbases.txt.gz | awk '{print $1}' | grep -n "scaffold6281" | head
+```
+
+* I then reformat my script to only read up to that line and randomize coverage up to that line
+
+```{bash}
+#!/bin/bash -l
+
+#SBATCH -J rand10Mb10k
+#SBATCH -e rand10Mb10k-%j.o
+#SBATCH -o rand10Mb10k-%j.o
+#SBATCH -N 1
+#SBATCH -n 8
+#SBATCH -t 03-00:00
+#SBATCH --mem=60000
+#SBATCH -p high
+
+module load bio3
+
+#files
+dir=/home/eoziolor/phpopg/data/depth
+
+zcat $dir/coverage_allbases.txt.gz | \
+head -n 529827386| \
+sort -R | \
+head -n 10000000 | \
+gzip > $dir/cov_10Mb10k.txt.gz
+```
+
+* Creating a file without any bases represented >5000 times
+
+```{bash}
+#!/bin/bash -l
+
+#SBATCH -J highcov
+#SBATCH -e highcov-%j.o
+#SBATCH -o highcov-%j.o
+#SBATCH -N 1
+#SBATCH -n 8
+#SBATCH -t 03-00:00
+#SBATCH --mem=60000
+#SBATCH -p high
+
+module load bio3
+source ~/.bashrc
+
+#files
+my_cov=/home/eoziolor/phpopg/data/depth/coverage_allbases.txt.gz
+my_out=/home/eoziolor/phpopg/data/depth/hicov.bed
+
+zcat $my_cov | \
+awk '{OFS="\t"}{s=$2-1}{print $1,s,$2,$3}' | \
+awk '{OFS="\t"}{if($4>5000){print}}' | \
+bedtools merge -i - -d 10 -c 4 -o count > $my_out
+```
