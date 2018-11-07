@@ -1,15 +1,14 @@
 #!/bin/bash -l
 
 #SBATCH -J freebayes
-#SBATCH --array=1-10000
+#SBATCH --array=10001-20000
 #SBATCH -e freebayes%A-%a.o
 #SBATCH -o freebayes%A-%a.o
 #SBATCH -N 1
-#SBATCH -n 24
-#SBATCH -t 06-00:00
-#SBATCH --mem=60000
-#SBATCH -p med
-#SBATCH --no-requeue
+#SBATCH -n 8
+#SBATCH -t 01-00:00
+#SBATCH --mem=8000
+#SBATCH -p low
 
 cd /home/eoziolor/phpopg/data/varcall/scaffold/
 
@@ -49,4 +48,3 @@ echo $outdir
 echo $region
 echo $outfile
 echo $crap
-echo $end
