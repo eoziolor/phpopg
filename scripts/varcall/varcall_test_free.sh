@@ -1,16 +1,18 @@
 #!/bin/bash -l
 
-#SBATCH -J freebayes
-#SBATCH --array=300-10000
-#SBATCH -e freebayes%A-%a.o
-#SBATCH -o freebayes%A-%a.o
+#SBATCH -J freebayes_free
+#SBATCH --array=2-3
+#SBATCH -e freebayes_free_%A-%a.o
+#SBATCH -o freebayes_free_%A-%a.o
 #SBATCH -t 06-00:00
-#SBATCH --cpus-per-task=1
+#SBATCH -n 4
 #SBATCH --mem=8G
-#SBATCH -p med
+#SBATCH -p high
 #SBATCH --no-requeue
 
-cd /home/eoziolor/phpopg/data/varcall/scaffold/
+source ~/.bashrc
+
+cd /home/eoziolor/program/freebayes/
 
 #files
 genome=/home/eoziolor/phgenome/data/genome/phgenome_masked.fasta
@@ -22,6 +24,8 @@ reg_file=/home/eoziolor/phgenome/data/genome/phgenome_masked.fasta.genome
 
 #programs
 my_freebayes=/home/eoziolor/program/freebayes/bin/freebayes
+my_parallel=/home/eoziolor/program/freebayes/scripts/freebayes-parallel
+my_generate=/home/eoziolor/program/freebayes/scripts/fasta_generate_regions.py
 my_samtools=/home/eoziolor/program/samtools-1.9/samtools
 my_bgz=/home/eoziolor/program/htslib/bgzip
 my_bedtools=/home/eoziolor/program/bedtools2/bin/bedtools
@@ -38,10 +42,17 @@ region=$scaf:1-$end
 outdir=/home/eoziolor/phpopg/data/varcall/scaffold
 outfile=$scaf.vcf.bgz
 
-$my_samtools view -q 30 -f 2 -h -b  $mergebam $region | \
-$my_bedtools intersect -v -a stdin -b $hicov | \
-$my_freebayes -f $genome --populations $popsfile --use-best-n-alleles 4 --stdin | \
-$my_bgz > $outdir/$outfile
+#code to run
+start=`date +%s`
+
+#$my_samtools view -q 30 -f 2 -h -b  $mergebam $region > $outdir/$scaf.bed
+#$my_bedtools intersect -v -b $hicov -a $outdir/$scaf.bed >  $outdir/$scaf\_low.bam
+$my_freebayes -f $genome --populations $popsfile $outdir/$scaf\_low.bam | \
+$my_bgz > $outdir/$outfile\_2
+
+end=`date +%s`
+runtime=$((end-start))
+echo "line took $((end-start)) seconds"
 
 echo $outdir
 echo $region

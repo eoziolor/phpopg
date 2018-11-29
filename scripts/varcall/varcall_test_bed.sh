@@ -1,9 +1,9 @@
 #!/bin/bash -l
 
-#SBATCH -J freebayes
-#SBATCH --array=300-10000
-#SBATCH -e freebayes%A-%a.o
-#SBATCH -o freebayes%A-%a.o
+#SBATCH -J freebayes_bed
+#SBATCH --array=1-8
+#SBATCH -e freebayes_bed_%A-%a.o
+#SBATCH -o freebayes_bed_%A-%a.o
 #SBATCH -t 06-00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=8G
@@ -11,6 +11,7 @@
 #SBATCH --no-requeue
 
 cd /home/eoziolor/phpopg/data/varcall/scaffold/
+
 
 #files
 genome=/home/eoziolor/phgenome/data/genome/phgenome_masked.fasta
@@ -38,10 +39,17 @@ region=$scaf:1-$end
 outdir=/home/eoziolor/phpopg/data/varcall/scaffold
 outfile=$scaf.vcf.bgz
 
-$my_samtools view -q 30 -f 2 -h -b  $mergebam $region | \
-$my_bedtools intersect -v -a stdin -b $hicov | \
-$my_freebayes -f $genome --populations $popsfile --use-best-n-alleles 4 --stdin | \
-$my_bgz > $outdir/$outfile
+#code to run
+start=`date +%s`
+
+#$my_samtools view -q 30 -f 2 -h -b  $mergebam $region > $outdir/$scaf.bed
+$my_bedtools intersect -v -b $hicov -a $outdir/$scaf.bed >  $outdir/$scaf\_low.bam
+#$my_freebayes -f $genome --populations $popsfile --stdin | \
+#$my_bgz > $outdir/$outfile
+
+end=`date +%s`
+runtime=$((end-start))
+echo "line took $((end-start)) seconds"
 
 echo $outdir
 echo $region
