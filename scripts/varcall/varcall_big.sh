@@ -26,19 +26,25 @@ my_samtools=/home/eoziolor/program/samtools-1.9/samtools
 my_bgz=/home/eoziolor/program/htslib/bgzip
 my_bedtools=/home/eoziolor/program/bedtools2/bin/bedtools
 
-#region to investigate; each scaffold divided into 15 pieces
+#selecting scaffold to investigate from the genome file
 
 crap=$(echo $SLURM_ARRAY_TASK_ID)
-line=$(echo $((crap/20+1)))
+line=$(echo $(((crap+19)/20)))
 scaf=$(sed "$line q;d" $reg_file | cut -f1)
 end=$(sed "$line q;d" $reg_file | cut -f2)
 
-for i in {1..20}
-	do short=$((end/20))
-	chunk=$((i*short))
+#chunking a region to investigate
+
+short=$((end/20))
+iter=$((crap/line))
+chunk=$((iter*short))
+if [$chunk<$end]; then
 	region=$((1+chunk-short)):$chunk
-	echo $region
-done
+else
+	region=$((1+chunk-short)):$end
+fi
+
+echo $region
 
 #region=$scaf:1-$end 
 
