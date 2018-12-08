@@ -9,8 +9,8 @@ for i in {1..60}; do
 #chunking a region to investigate
 
         short=$((end/20))
-campus-113-109:~ eoziolor$ 
-campus-113-109:~ eoziolor$ ))
+	iter=$((crap-((line-1)*20)))
+	chunk=$((short*iter))
         region=$((1+chunk-short)):$chunk
 
         echo "This is array number" $crap 

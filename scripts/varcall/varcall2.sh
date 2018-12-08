@@ -4,14 +4,13 @@
 #SBATCH --array=10001-20000
 #SBATCH -e freebayes%A-%a.o
 #SBATCH -o freebayes%A-%a.o
-#SBATCH -N 1
-#SBATCH -n 8
-#SBATCH -t 01-00:00
-#SBATCH --mem=8000
-#SBATCH -p low
+#SBATCH -t 06-00:00
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=8G
+#SBATCH -p med
+#SBATCH --no-requeue
 
 cd /home/eoziolor/phpopg/data/varcall/scaffold/
-
 
 #files
 genome=/home/eoziolor/phgenome/data/genome/phgenome_masked.fasta
@@ -41,10 +40,11 @@ outfile=$scaf.vcf.bgz
 
 $my_samtools view -q 30 -f 2 -h -b  $mergebam $region | \
 $my_bedtools intersect -v -a stdin -b $hicov | \
-$my_freebayes -f $genome --populations $popsfile --stdin | \
+$my_freebayes -f $genome --populations $popsfile --use-best-n-alleles 4 --stdin | \
 $my_bgz > $outdir/$outfile
 
 echo $outdir
 echo $region
 echo $outfile
 echo $crap
+echo $end

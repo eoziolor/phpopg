@@ -480,3 +480,268 @@ awk '{OFS="\t"}{s=$2-1}{print $1,s,$2,$3}' | \
 awk '{OFS="\t"}{if($4>5000){print}}' | \
 bedtools merge -i - -d 10 -c 4 -o count > $my_out
 ```
+Oct 23, 2018
+===
+
+## Working on bimodal coverage
+
+* Downloading document
+
+```{bash}
+scp -P 2022 farm:/home/eoziolor/phpopg/data/depth/cov_10Mb10k.txt.gz ~/phpopg/data/depth/
+```
+
+* Plotting high quality scaffold dist
+
+```{r}
+cov<-read.table("~/phpopg/data/depth/cov_10Mb10k.txt.gz",header=F)
+names(cov)<-c("chrom","pos","cov")
+
+hist(cov$cov,breaks=1000)
+
+subw<-cov$cov<5000
+hist(cov[subw,"cov"],breaks=1000)
+
+summary(cov$cov)
+summary(cov[subw,"cov"])
+```
+
+## How much did we throw out?
+
+* Check how much of the genome you threw out
+
+```{r}
+hi<-read.table("~/phpopg/data/depth/hicov.bed",header=F)
+print("percent thrown out")
+(sum(hi[,4])/900000000)*100
+```
+
+Oct 25, 2018
+===
+* Install freebayes
+
+```{bash}
+cd /programs/
+git clone --recursive git://github.com/ekg/freebayes.git
+make
+```
+
+* Indexing merged bam file...all 970GB of it...
+
+```{bash}
+#!/bin/bash -l
+
+#SBATCH -J bam_index
+#SBATCH -e bam_index-%j.o
+#SBATCH -o bam_index%j.o
+#SBATCH -N 1
+#SBATCH -n 16
+#SBATCH -t 01-00:00
+#SBATCH --mem=60000
+#SBATCH -p high
+
+my_stools=/home/eoziolor/program/samtools-1.9/samtools 
+my_bam=/home/eoziolor/phpopg/data/align/allmerge.bam
+
+$my_stools -@16 index $my_bam
+```
+
+Nov 27, 2018
+===
+
+## VCF calling
+
+* Have been trying this script, but unfortunately that takes forever. 
+
+```{bash}
+#!/bin/bash -l
+
+#SBATCH -J freebayes
+#SBATCH --array=1-10000
+#SBATCH -e freebayes%A-%a.o
+#SBATCH -o freebayes%A-%a.o
+#SBATCH -t 06-00:00
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=8G
+#SBATCH -p med
+#SBATCH --no-requeue
+
+cd /home/eoziolor/phpopg/data/varcall/scaffold/
+
+
+#files
+genome=/home/eoziolor/phgenome/data/genome/phgenome_masked.fasta
+my_fai=/home/eoziolor/phgenome/data/genome/phgenome_masked.fasta.fai
+mergebam=/home/eoziolor/phpopg/data/align/allmerge.bam
+popsfile=/home/eoziolor/phpopg/data/list/zeros_samples.tsv
+hicov=/home/eoziolor/phpopg/data/depth/hicov.bed
+reg_file=/home/eoziolor/phgenome/data/genome/phgenome_masked.fasta.genome
+
+#programs
+my_freebayes=/home/eoziolor/program/freebayes/bin/freebayes
+my_samtools=/home/eoziolor/program/samtools-1.9/samtools
+my_bgz=/home/eoziolor/program/htslib/bgzip
+my_bedtools=/home/eoziolor/program/bedtools2/bin/bedtools
+
+#region to investigate
+
+crap=$(echo $SLURM_ARRAY_TASK_ID)
+scaf=$(sed "$crap q;d" $reg_file | cut -f1)
+end=$(sed "$crap q;d" $reg_file | cut -f2)
+region=$scaf:1-$end 
+
+#directories and files
+
+outdir=/home/eoziolor/phpopg/data/varcall/scaffold
+outfile=$scaf.vcf.bgz
+
+$my_samtools view -q 30 -f 2 -h -b  $mergebam $region | \
+$my_bedtools intersect -v -a stdin -b $hicov | \
+$my_freebayes -f $genome --populations $popsfile --stdin | \
+$my_bgz > $outdir/$outfile
+
+echo $outdir
+echo $region
+echo $outfile
+echo $crap
+echo $end
+```
+
+* In order to try and find the bottleneck here, I will try to run each portion of the samtools/bedtools/freebayes code separately and see what the limiting step is.
+* Let's start with two scripts that will run just samtools and try to split it into multiple cores as well
+
+```{bash}
+#!/bin/bash -l
+
+#SBATCH -J freebayes
+#SBATCH --array=1-10
+#SBATCH -e freebayes%A-%a.o
+#SBATCH -o freebayes%A-%a.o
+#SBATCH -t 06-00:00
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=8G
+#SBATCH -p med
+#SBATCH --no-requeue
+
+cd /home/eoziolor/phpopg/data/varcall/scaffold/
+
+
+#files
+genome=/home/eoziolor/phgenome/data/genome/phgenome_masked.fasta
+my_fai=/home/eoziolor/phgenome/data/genome/phgenome_masked.fasta.fai
+mergebam=/home/eoziolor/phpopg/data/align/allmerge.bam
+popsfile=/home/eoziolor/phpopg/data/list/zeros_samples.tsv
+hicov=/home/eoziolor/phpopg/data/depth/hicov.bed
+reg_file=/home/eoziolor/phgenome/data/genome/phgenome_masked.fasta.genome
+
+#programs
+my_freebayes=/home/eoziolor/program/freebayes/bin/freebayes
+my_samtools=/home/eoziolor/program/samtools-1.9/samtools
+my_bgz=/home/eoziolor/program/htslib/bgzip
+my_bedtools=/home/eoziolor/program/bedtools2/bin/bedtools
+
+#region to investigate
+
+crap=$(echo $SLURM_ARRAY_TASK_ID)
+scaf=$(sed "$crap q;d" $reg_file | cut -f1)
+end=$(sed "$crap q;d" $reg_file | cut -f2)
+region=$scaf:1-$end 
+
+#directories and files
+
+outdir=/home/eoziolor/phpopg/data/varcall/scaffold
+outfile=$scaf.vcf.bgz
+
+#code to run
+start=`date +%s`
+
+$my_samtools view -q 30 -f 2 -h -b  $mergebam $region > $outdir/$scaf.bed
+#$my_bedtools intersect -v -a stdin -b $hicov | \
+#$my_freebayes -f $genome --populations $popsfile --stdin | \
+#$my_bgz > $outdir/$outfile
+
+end=`date +%s`
+runtime=$((end-start))
+echo "line took $((end-start)) seconds"
+
+echo $outdir
+echo $region
+echo $outfile
+echo $crap
+echo $end
+```
+
+* I did the same with bedtools.
+	* I don't think that either of those are the limiting reagent - both took less than 40 min to run for the largest scaffolds.
+	* The issue must be with freebayes. I will systematically try to make it faster
+
+* Things I am trying in order
+	* Increasing the RAM available from 8GB to 16GB
+		* that does work in making it a bit faster
+	* Decreasing the number of alleles considered
+		* adding --use-best-n-alleles 4 into the script in order to consider the top 4 allels
+
+
+Nov 28, 2018
+===
+
+## Working on variant calling freebayes
+
+* I have decided to call on scaffolds smaller than 500000 since those will call in time. for the rest of them I will write a different script that breaks each scaffold into 10-15 chunks and that should be fine for now.
+
+* Small scaffold calling script
+
+```{bash}
+#!/bin/bash -l
+
+#SBATCH -J freebayes
+#SBATCH --array=300-10000
+#SBATCH -e freebayes%A-%a.o
+#SBATCH -o freebayes%A-%a.o
+#SBATCH -t 06-00:00
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=8G
+#SBATCH -p med
+#SBATCH --no-requeue
+
+cd /home/eoziolor/phpopg/data/varcall/scaffold/
+
+#files
+genome=/home/eoziolor/phgenome/data/genome/phgenome_masked.fasta
+my_fai=/home/eoziolor/phgenome/data/genome/phgenome_masked.fasta.fai
+mergebam=/home/eoziolor/phpopg/data/align/allmerge.bam
+popsfile=/home/eoziolor/phpopg/data/list/zeros_samples.tsv
+hicov=/home/eoziolor/phpopg/data/depth/hicov.bed
+reg_file=/home/eoziolor/phgenome/data/genome/phgenome_masked.fasta.genome
+
+#programs
+my_freebayes=/home/eoziolor/program/freebayes/bin/freebayes
+my_samtools=/home/eoziolor/program/samtools-1.9/samtools
+my_bgz=/home/eoziolor/program/htslib/bgzip
+my_bedtools=/home/eoziolor/program/bedtools2/bin/bedtools
+
+#region to investigate
+
+crap=$(echo $SLURM_ARRAY_TASK_ID)
+scaf=$(sed "$crap q;d" $reg_file | cut -f1)
+end=$(sed "$crap q;d" $reg_file | cut -f2)
+region=$scaf:1-$end 
+
+#directories and files
+
+outdir=/home/eoziolor/phpopg/data/varcall/scaffold
+outfile=$scaf.vcf.bgz
+
+$my_samtools view -q 30 -f 2 -h -b  $mergebam $region | \
+$my_bedtools intersect -v -a stdin -b $hicov | \
+$my_freebayes -f $genome --populations --use-best-n-alleles 4 $popsfile --stdin | \
+$my_bgz > $outdir/$outfile
+
+echo $outdir
+echo $region
+echo $outfile
+echo $crap
+echo $end
+```
+
+
