@@ -1,7 +1,7 @@
 #!/bin/bash -l
 
 #SBATCH -J freebayes
-#SBATCH --array=300-10000
+#SBATCH --array=1-3868
 #SBATCH -e freebayes%A-%a.o
 #SBATCH -o freebayes%A-%a.o
 #SBATCH -t 06-00:00
@@ -13,12 +13,12 @@
 cd /home/eoziolor/phpopg/data/varcall/scaffold/
 
 #files
-genome=/home/eoziolor/phgenome/data/genome/phgenome_masked.fasta
-my_fai=/home/eoziolor/phgenome/data/genome/phgenome_masked.fasta.fai
+genome=/home/eoziolor/phpopg/data/genome/CAADHV01.fasta
+my_fai=/home/eoziolor/phpopg/data/genome/CAADHV01.fasta.fai
 mergebam=/home/eoziolor/phpopg/data/align/allmerge.bam
 popsfile=/home/eoziolor/phpopg/data/list/zeros_samples.tsv
 hicov=/home/eoziolor/phpopg/data/depth/hicov.bed
-reg_file=/home/eoziolor/phgenome/data/genome/phgenome_masked.fasta.genome
+reg_file=/home/eoziolor/phpopg/data/genome/CAADHV01.fasta.genome
 
 #programs
 my_freebayes=/home/eoziolor/program/freebayes/bin/freebayes
