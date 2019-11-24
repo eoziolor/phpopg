@@ -1,0 +1,56 @@
+==========================================
+SLURM_JOB_ID = 15810488
+SLURM_NODELIST = c10-18
+==========================================
+Module bio3/1.0 loaded 
+003
+/home/eoziolor/program/samtools-1.9/samtools: /share/apps/bio3user/miniconda3/lib/libcurl.so.4: no version information available (required by /home/eoziolor/program/samtools-1.9/samtools)
+/home/eoziolor/program/samtools-1.9/samtools: /share/apps/bio3user/miniconda3/lib/libcurl.so.4: no version information available (required by /home/eoziolor/program/samtools-1.9/samtools)
+/home/eoziolor/program/samtools-1.9/samtools: /share/apps/bio3user/miniconda3/lib/libcurl.so.4: no version information available (required by /home/eoziolor/program/samtools-1.9/samtools)
+/home/eoziolor/program/samtools-1.9/samtools: /share/apps/bio3user/miniconda3/lib/libcurl.so.4: no version information available (required by /home/eoziolor/program/samtools-1.9/samtools)
+/home/eoziolor/program/samtools-1.9/samtools: /share/apps/bio3user/miniconda3/lib/libcurl.so.4: no version information available (required by /home/eoziolor/program/samtools-1.9/samtools)
+sort: invalid option -- 'p'
+Usage: samtools sort [options...] [in.bam]
+Options:
+  -l INT     Set compression level, from 0 (uncompressed) to 9 (best)
+  -m INT     Set maximum memory per thread; suffix K/M/G recognized [768M]
+  -n         Sort by read name
+  -t TAG     Sort by value of TAG. Uses position as secondary index (or read name if -n is set)
+  -o FILE    Write final output to FILE rather than standard output
+  -T PREFIX  Write temporary files to PREFIX.nnnn.bam
+      --input-fmt-option OPT[=VAL]
+               Specify a single input file format option in the form
+               of OPTION or OPTION=VALUE
+  -O, --output-fmt FORMAT[,OPT[=VAL]]...
+               Specify output format (SAM, BAM, CRAM)
+      --output-fmt-option OPT[=VAL]
+               Specify a single output file format option in the form
+               of OPTION or OPTION=VALUE
+      --reference FILE
+               Reference sequence FASTA FILE [null]
+  -@, --threads INT
+               Number of additional threads to use [0]
+[bam_sort] Use -T PREFIX / -o FILE to specify temporary and final output files
+Usage: samtools sort [options...] [in.bam]
+Options:
+  -l INT     Set compression level, from 0 (uncompressed) to 9 (best)
+  -m INT     Set maximum memory per thread; suffix K/M/G recognized [768M]
+  -n         Sort by read name
+  -t TAG     Sort by value of TAG. Uses position as secondary index (or read name if -n is set)
+  -o FILE    Write final output to FILE rather than standard output
+  -T PREFIX  Write temporary files to PREFIX.nnnn.bam
+      --input-fmt-option OPT[=VAL]
+               Specify a single input file format option in the form
+               of OPTION or OPTION=VALUE
+  -O, --output-fmt FORMAT[,OPT[=VAL]]...
+               Specify output format (SAM, BAM, CRAM)
+      --output-fmt-option OPT[=VAL]
+               Specify a single output file format option in the form
+               of OPTION or OPTION=VALUE
+      --reference FILE
+               Reference sequence FASTA FILE [null]
+  -@, --threads INT
+               Number of additional threads to use [0]
+This is cutadapt 2.4 with Python 3.6.7
+Command line parameters: -j 8 --interleaved -a CTGTCTCTTATA -A CTGTCTCTTATA -u 10 -U 10 -q 30 --trim-n --minimum-length 36 -
+Processing reads on 8 cores in paired-end mode ...
